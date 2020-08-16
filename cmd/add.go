@@ -130,8 +130,17 @@ ex:
 // GithubAuth reads an api token from the environment
 // expecting API_GITHUB_TOKEN and authenticates with github api
 // and returns an authenticated client.
-func GithubAuth() (context.Context, *github.Client) {
+func GithubAuth() (context.Context, *github.Client, error) {
 	token := os.Getenv("API_GITHUB_TOKEN")
+	if token == "" {
+		return nil, nil, errors.New(`no API_GITHUB_TOKNE was found in the environment variables.
+This is needed to authenticate with github. Please generate a github token that has access to do what you are trying to do
+and export it as an environment variable.
+
+ex:
+	export API_GITHUB_TOKEN="<token contents string>"
+`)
+	}
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
@@ -139,7 +148,7 @@ func GithubAuth() (context.Context, *github.Client) {
 	tc := oauth2.NewClient(ctx, ts)
 
 	client := github.NewClient(tc)
-	return ctx, client
+	return ctx, client, nil
 }
 
 // AddRepoSecret will add a secret value to a given github repo for a given owner
@@ -163,7 +172,10 @@ func GithubAuth() (context.Context, *github.Client) {
 // then the KeyID will be the public key of the repo's ID, which is gettable from the public key's GetKeyID method.
 // Finally you can pass that object in and have it be created or updated in github.
 func AddRepoSecret(owner string, repo string, secretName string, secretValue string) (string, error) {
-	ctx, client := GithubAuth()
+	ctx, client, err := GithubAuth()
+	if err != nil {
+		return "", err
+	}
 	publicKey, _, err := client.Actions.GetRepoPublicKey(ctx, owner, repo)
 	if err != nil {
 		return "", err
