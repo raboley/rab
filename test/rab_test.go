@@ -10,7 +10,14 @@ func TestGetSecret(t *testing.T) {
 	repo := "rab"
 	owner := "raboley"
 
-	ctx, client := cmd.GithubAuth()
+	ctx, client, err := cmd.GithubAuth()
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if client == nil {
+		t.Error("error trying to auth with github, silently failed with nil client")
+		t.FailNow()
+	}
 
 	name := "TEST_READ"
 	secret, response, err := client.Actions.GetRepoSecret(ctx, owner, repo, name)
@@ -33,7 +40,14 @@ func TestAddSecret(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	ctx, client := cmd.GithubAuth()
+	ctx, client, err := cmd.GithubAuth()
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if client == nil {
+		t.Error("error trying to auth with github, silently failed with nil client")
+		t.FailNow()
+	}
 	secret, response, err := client.Actions.GetRepoSecret(ctx, owner, repo, secretName)
 	if err != nil {
 		t.Log(response)
