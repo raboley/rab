@@ -26,6 +26,7 @@ import (
 	"github.com/spf13/pflag"
 	"golang.org/x/oauth2"
 	"os"
+	"strings"
 )
 
 // addCmd represents the add command
@@ -66,10 +67,14 @@ func add(cmd *cobra.Command, args []string) {
 	}
 	var err error
 	var addedThing string
+	var addedThings []string
 
 	switch args[0] {
 	case "secret":
 		addedThing, err = addSecret(args, cmd.Flags())
+	case "secrets":
+		addedThings, err = addSecrets(args, cmd.Flags())
+		addedThing = strings.Join(addedThings[:], ",")
 	default:
 		_ = cmd.Help()
 		os.Exit(0)
@@ -82,6 +87,26 @@ func add(cmd *cobra.Command, args []string) {
 	}
 
 	fmt.Println("Added/Updated ", args[0], addedThing)
+}
+
+func addSecrets(args []string, flags *pflag.FlagSet) ([]string, error) {
+	if len(args) < 2 {
+		err := errors.New("not enough args for command error")
+		return []string{}, err
+	}
+
+	secretNames := strings.Split(args[1], ",")
+	var addedSecrets []string
+
+	for _, name := range secretNames {
+		addedSecret, err := addSecret([]string{"secret", name}, flags)
+		if err != nil {
+			return addedSecrets, err
+		}
+		addedSecrets = append(addedSecrets, addedSecret)
+	}
+
+	return addedSecrets, nil
 }
 
 func addSecret(args []string, flags *pflag.FlagSet) (string, error) {
